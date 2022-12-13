@@ -44,6 +44,9 @@ dmx.Component("jonl_cropper", {
         crop: function () {
             cropper.crop()
         },
+        reset: function () {
+            cropper.reset()
+        },
         clear: function () {
             cropper.clear()
         },
@@ -114,32 +117,27 @@ dmx.Component("jonl_cropper", {
             cropper.setDragMode(mode)
         },
         crop: function (options, filename = 'file', type = 'image/png', encoder) {
+            this.data.canvas = cropper.getCroppedCanvas(options)
+            this.data.type = type
+            this.data.encoder = encoder
             this.data.file = {}
             this.data.file.name = filename
             this.data.file.date = new Date().toISOString()
-            this.data.file.dataUrl = cropper.getCroppedCanvas(options).toDataURL(type, encoder)
+            this.data.file.dataUrl = this.data.canvas.toDataURL(type, encoder)
             this.data.file.size = atob(this.data.file.dataUrl.split(',')[1]).length
             this.data.file.type = this.data.file.dataUrl.substring(this.data.file.dataUrl.indexOf(":") + 1, this.data.file.dataUrl.indexOf(";"))
             this.dispatchEvent('cropped')
-
-            // let obj = this
-            // obj.data.croppedCanvas = cropper.getCroppedCanvas(options)
-            // obj.data.croppedDataUrl = obj.data.croppedCanvas.toDataURL()
-            // //options...filename
-            // obj.data.croppedCanvas.toBlob(function (blob) {
-            //     obj.data.croppedFile = new File([blob], "cropped_file.jpeg", { type: blob.type });
-            //     obj.data.croppedFileURL = URL.createObjectURL(blob);
-            //     obj.dispatchEvent('cropped')
-            // }, 'image/jpeg', 0.8)
-
+            dmx.requestUpdate()
         },
-        replaceFile: function (source, target) {
-            Object.assign(target, source)
+        attachToForm: function (form, name) {
+            this.data.canvas.toBlob(function (blob) {
+                document.getElementById(form).dmxExtraData[name] = new File([blob], name, { lastModified: new Date().getTime(), type: blob.type });
+            }.bind(this), this.data.type, this.data.encoder);
         }
     },
     events: { cropped: Event },
     update: function (oldProps, updatedProps) {
-        if (/*(updatedProps && updatedProps.has('src') && oldProps.src == null) ||*/ this.props.src) {
+        if ((updatedProps && updatedProps.has('src') && oldProps.src == null)) {
             this.init()
         }
     },
@@ -151,8 +149,12 @@ dmx.Component("jonl_cropper", {
         wrapper.appendChild(this.$node);
     },
     init: function () {
+        this.data.file = null
+        dmx.requestUpdate()
+        if (cropper) {
+            cropper.destroy()
+        }
         this.$node.src = this.props.src
-        this.props.src = ""
         var image = document.getElementById(this.$node.id);
         cropper = new Cropper(image, {
             container: this.$node.id + "-container",
