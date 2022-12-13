@@ -1,5 +1,3 @@
-let cropper;
-
 dmx.Component("jonl_cropper", {
     initialData: {
         file: null
@@ -117,7 +115,7 @@ dmx.Component("jonl_cropper", {
             cropper.setDragMode(mode)
         },
         crop: function (options, filename = 'file', type = 'image/png', encoder) {
-            this.data.canvas = cropper.getCroppedCanvas(options)
+            this.data.canvas = this.cropper.getCroppedCanvas(options)
             this.data.type = type
             this.data.encoder = encoder
             this.data.file = {}
@@ -151,12 +149,12 @@ dmx.Component("jonl_cropper", {
     init: function () {
         this.data.file = null
         dmx.requestUpdate()
-        if (cropper) {
-            cropper.destroy()
+        if (this.cropper) {
+            this.cropper.destroy()
         }
         this.$node.src = this.props.src
         var image = document.getElementById(this.$node.id);
-        cropper = new Cropper(image, {
+        this.cropper = new Cropper(image, {
             container: this.$node.id + "-container",
             viewMode: this.props.viewMode,
             dragMode: this.props.dragMode,
